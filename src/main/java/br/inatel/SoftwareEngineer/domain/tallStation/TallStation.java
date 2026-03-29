@@ -33,7 +33,7 @@ public class TallStation {
         this.basePrice = basePrice;
     }
 
-    public BigDecimal calculateToll(Vehicle vehicle, LocalTime time) {
+    public BigDecimal calculateTall(Vehicle vehicle, LocalTime time) {
         
         if (Boolean.TRUE.equals(vehicle.getIs_emergency())) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);

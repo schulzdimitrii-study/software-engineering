@@ -23,7 +23,7 @@ class TallStationTest {
     void calculateSixAxlesTruck() {
         Vehicle truck = new Vehicle("ABC-1234", VehicleType.TRUCK, 6, false);
         
-        BigDecimal result = tallStation.calculateToll(truck, LocalTime.of(10, 0));
+        BigDecimal result = tallStation.calculateTall(truck, LocalTime.of(10, 0));
 
         assertEquals(new BigDecimal("30.00"), result);
     }
@@ -32,10 +32,10 @@ class TallStationTest {
     void peakHour() {
         Vehicle car = new Vehicle("XYZ-9876", VehicleType.CAR, 2, false);
 
-        BigDecimal normalResult = tallStation.calculateToll(car, LocalTime.of(10, 0));
+        BigDecimal normalResult = tallStation.calculateTall(car, LocalTime.of(10, 0));
         assertEquals(new BigDecimal("10.00"), normalResult);
 
-        BigDecimal peakResult = tallStation.calculateToll(car, LocalTime.of(8, 0));
+        BigDecimal peakResult = tallStation.calculateTall(car, LocalTime.of(8, 0));
         assertEquals(new BigDecimal("12.00"), peakResult);
     }
 
@@ -43,7 +43,7 @@ class TallStationTest {
     void emergencyVehicles() {
         Vehicle ambulance = new Vehicle("SOS-1920", VehicleType.CAR, 2, true);
         
-        BigDecimal result = tallStation.calculateToll(ambulance, LocalTime.of(8, 0));
+        BigDecimal result = tallStation.calculateTall(ambulance, LocalTime.of(8, 0));
 
         assertEquals(new BigDecimal("0.00"), result);
     }
