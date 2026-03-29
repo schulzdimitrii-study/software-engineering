@@ -1,4 +1,4 @@
-package br.inatel.SoftwareEngineer.domain.toll;
+package br.inatel.SoftwareEngineer.domain.tallStation;
 
 import br.inatel.SoftwareEngineer.domain.vehicles.Vehicle;
 import jakarta.persistence.*;
@@ -16,8 +16,8 @@ import java.time.LocalTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "toll_stations")
-public class TollStation {
+@Table(name = "tall_stations")
+public class TallStation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -28,7 +28,7 @@ public class TollStation {
     @Column(name = "base_price", precision = 10, scale = 2)
     private BigDecimal basePrice;
 
-    public TollStation(String name, BigDecimal basePrice) {
+    public TallStation(String name, BigDecimal basePrice) {
         this.name = name;
         this.basePrice = basePrice;
     }
