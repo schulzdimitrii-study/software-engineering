@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -23,6 +24,7 @@ public class Vehicle {
     private VehicleType type;
     private Integer axles;
     private Boolean is_emergency;
+    private LocalDateTime created_at;
 
     public Vehicle(String plate, VehicleType type, Integer axles, Boolean is_emergency) {
         this.plate = plate;
