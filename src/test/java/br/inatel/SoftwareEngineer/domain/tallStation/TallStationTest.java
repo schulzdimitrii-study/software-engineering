@@ -47,4 +47,12 @@ class TallStationTest {
 
         assertEquals(new BigDecimal("0.00"), result);
     }
+
+    @Test
+    void calculateStandardFare() {
+        Vehicle car = new Vehicle("BAG-2A07", VehicleType.CAR, 2, false);
+        BigDecimal result = tallStation.calculateTall(car, LocalTime.of(10, 0));
+        assertEquals(new BigDecimal("10.00"), result);
+    }
+
 }
