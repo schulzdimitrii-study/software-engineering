@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
+
 
 import br.inatel.SoftwareEngineer.domain.tallStation.TallStation;
 
@@ -21,8 +21,8 @@ import br.inatel.SoftwareEngineer.domain.tallStation.TallStation;
 public class Passages {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private Integer id;
 
     @ManyToOne
     @JoinColumn(name = "vehicle_id")
