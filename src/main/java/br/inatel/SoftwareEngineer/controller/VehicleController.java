@@ -24,7 +24,7 @@ public class VehicleController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<Vehicle> updateVehicle(@PathVariable Integer id, @RequestBody Vehicle vehicleData) {
+    public ResponseEntity<Vehicle> updateVehicle(@PathVariable Integer id, @Valid @RequestBody Vehicle vehicleData) {
         Optional<Vehicle> existingVehicle = vehicleRepository.findById(id);
         if (existingVehicle.isPresent()) {
             vehicleData.setId(id);
