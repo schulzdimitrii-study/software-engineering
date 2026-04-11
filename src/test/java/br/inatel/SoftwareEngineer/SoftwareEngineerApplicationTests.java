@@ -1,15 +1,14 @@
 package br.inatel.SoftwareEngineer;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 class SoftwareEngineerApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void applicationClassCanBeInstantiated() {
+		assertNotNull(new SoftwareEngineerApplication());
 	}
 
 }

@@ -10,9 +10,9 @@ API Spring Boot que simula um sistema de pedágio, com foco em veículos e suas 
 
 ## Configuracao de banco (PostgreSQL)
 
-O profile padrao e `postgres` (`src/main/resources/application.properties`).
+O projeto sobe localmente com H2 em memoria, sem precisar de banco externo.
 
-As propriedades estao em `src/main/resources/application-postgres.properties`:
+Se voce quiser usar PostgreSQL em ambiente de deploy ou teste manual, defina as variaveis de ambiente previstas em `src/main/resources/application.properties`:
 
 - `DB_URL` (default: `jdbc:postgresql://localhost:5432/postgres`)
 - `DB_USER` (default: usuario do sistema operacional)
@@ -34,6 +34,14 @@ export DB_PASSWORD="sua_senha"
 ./mvnw test
 ```
 
+### 1.1) Gerar cobertura de teste
+
+```bash
+./mvnw verify
+```
+
+O relatorio fica em `target/site/jacoco/index.html`.
+
 ### 2) Subir a aplicacao
 
 ```bash
@@ -41,6 +49,23 @@ export DB_PASSWORD="sua_senha"
 ```
 
 A aplicacao sobe, por padrao, em `http://localhost:8080`.
+
+### 3) Rodar com Docker
+
+```bash
+./mvnw clean package -DskipTests
+docker build -t software-engineering-api .
+docker run --rm -p 8080:8080 software-engineering-api
+```
+
+Se quiser gerar a imagem com tag explicita:
+
+```bash
+docker build -t software-engineering-api:1.0 .
+docker run --rm -p 8080:8080 software-engineering-api:1.0
+```
+
+O deploy em CI/CD publica a imagem Docker no GitHub Container Registry depois que build e testes passam.
 
 ## Rodar pelo IntelliJ (Run/Debug)
 
@@ -54,7 +79,7 @@ Em **Environment variables**, opcionalmente defina:
 - `DB_USER`
 - `DB_PASSWORD`
 
-Se nao definir, os defaults de `application-postgres.properties` serao usados.
+Se nao definir, o projeto usa H2 localmente.
 
 ## Endpoints atuais
 
