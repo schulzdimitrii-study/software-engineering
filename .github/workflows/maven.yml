@@ -154,35 +154,36 @@ jobs:
   # Envia o site para o GitHub Pages
   # ---------------------------
   deploy-pages:
-    name: Deploy Site to GitHub Pages
+    name: Publish Documentation and Test Reports Online
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' 
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.publish_to_web.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Download Repository Source Code
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 25
+      - name: Configure Java 25 Environment
         uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
 
-      - name: Generate Maven Report
+      - name: Recompile Project and Generate Detailed Testing HTML Site
         run: ./mvnw clean verify site
 
-      - name: Upload report to GitHub Pages
+      - name: Package Generated Site Directory as a Valid GitHub Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: target/site/
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: Publish the Packaged Artifact to the Live GitHub Pages URL
+        id: publish_to_web
         uses: actions/deploy-pages@v4
 
   # ---------------------------
@@ -191,7 +192,7 @@ jobs:
   # ---------------------------
   notify:
     runs-on: ubuntu-latest
-    needs: [build, test, deploy-docker]
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' 
     steps:
       - uses: actions/checkout@v4
