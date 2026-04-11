@@ -1,6 +1,5 @@
-# Pipeline CI/CD - Java com Maven
-# Etapas: Build → Test → Cobertura → Deploy (GitHub Pages)
-# O site gerado (relatórios de testes + cobertura) é publicado como uma URL pública.
+# Pipeline CI/CD - Java com Maven e Docker
+# Etapas: Build → Test → Deploy em container (GitHub Container Registry)
 
 name: Java CI/CD with Maven
 
@@ -10,36 +9,16 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
 
-# Permissões necessárias para o job de deploy-pages
 permissions:
   contents: read
   pages: write
-  id-token: write
+  packages: write
   checks: write
 
 jobs:
-  # ──────────────────────────────────────────
-  # ETAPA 1 — BUILD
-  # Compila o projeto
-  # ──────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: ${{secrets.DB_NAME}}
-          POSTGRES_USER: ${{secrets.DB_USER}}
-          POSTGRES_PASSWORD: ${{secrets.DB_PASSWORD}}
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
     - uses: actions/checkout@v4
@@ -51,47 +30,15 @@ jobs:
         distribution: 'temurin'
         cache: maven
     
-    - name: Wait for PostgreSQL to be ready
-      run: |
-        for i in {1..30}; do
-          if pg_isready -h localhost -p 5432 -U ${{secrets.DB_USER}}; then
-            echo "PostgreSQL is ready!"
-            break
-          fi
-          echo "Waiting for PostgreSQL... ($i/30)"
-          sleep 1
-        done
-      env:
-        PGPASSWORD: ${{secrets.DB_PASSWORD}}
-    
-    - name: Create PostgreSQL Database
-      run: createdb -h localhost -U ${{secrets.DB_USER}} -w ${{secrets.DB_NAME}} || true
-      env:
-        PGPASSWORD: ${{secrets.DB_PASSWORD}}
-    
     - name: Compile with Maven
-      run: ./mvnw clean install -DskipTests
-      env:
-        DB_URL: jdbc:postgresql://localhost:5432/softwareengineer
-        DB_DRIVER: org.postgresql.Driver
-        DB_USER: ${{secrets.DB_USER}}
-        DB_PASSWORD: ${{secrets.DB_PASSWORD}}
-        DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
-        DDL_AUTO: validate
-        FLYWAY_ENABLED: "true"
-        ALLOW_JDBC_METADATA: "false"
-        H2_CONSOLE: "false"
+      run: ./mvnw clean package -DskipTests
 
-    - name: Upload Artifact (Deploy)
+    - name: Upload JAR artifact
       uses: actions/upload-artifact@v4
       with:
         name: software-engineering-app
         path: target/*.jar
 
-  # ──────────────────────────────────────────
-  # ETAPA 2 — TESTES
-  # Executa os testes unitários
-  # ──────────────────────────────────────────
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -108,25 +55,113 @@ jobs:
         cache: maven
 
     - name: Run Tests with Maven
-      run: ./mvnw test
+      run: ./mvnw verify
       env:
-        SPRING_PROFILE_ACTIVE: test
+        SPRING_PROFILES_ACTIVE: test
+  
+  coverage:
+    name: Code Coverage
+    needs: build
+    runs-on: ubuntu-latest
 
-  # ──────────────────────────────────────────
-  # ETAPA 3 — NOTIFICAÇÃO
-  # Instala msmtp na VM e envia e-mail com o resultado do pipeline
-  # ──────────────────────────────────────────
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run tests with JaCoCo
+        run: ./mvnw clean verify
+
+      - name: Upload JaCoCo HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 7
+  
+  deploy-docker:
+    name: Deploy Docker Image
+    runs-on: ubuntu-latest
+    needs: [build, test, coverage]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download JAR artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: software-engineering-app
+        path: target
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/software-engineering:latest
+          ghcr.io/${{ github.repository_owner }}/software-engineering:${{ github.sha }}
+  
+  deploy-pages:
+    name: Deploy Site to GitHub Pages
+    needs: [test, coverage]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' 
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Generate Maven site (tests + coverage + reports)
+        run: ./mvnw clean verify site
+
+      - name: Upload site to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   notify:
     runs-on: ubuntu-latest
-    needs: [build, test]
-    if: always()
+    needs: [build, test, test-coverage, deploy]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' 
     steps:
       - uses: actions/checkout@v4
 
       - name: Determine build status
         id: status
         run: |
-          if [ "${{ needs.build.result }}" = "success" ] && [ "${{ needs.test.result }}" = "success" ]; then
+          if [ "${{ needs.build.result }}" = "success" ] && [ "${{ needs.test.result }}" = "success" ] && [ "${{ needs.deploy-docker.result }}" != "failure" ]; then
             echo "result=success" >> $GITHUB_OUTPUT
           else
             echo "result=failure" >> $GITHUB_OUTPUT
