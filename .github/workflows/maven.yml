@@ -4,8 +4,6 @@
 name: Java CI/CD with Maven and Docker
 
 on:
-  push:
-    branches: [ "main", "dev" ]
   pull_request:
     branches: [ "main", "dev" ]
 
@@ -99,6 +97,16 @@ jobs:
       run: ./mvnw verify
       env:
         SPRING_PROFILES_ACTIVE: test
+
+    - name: Run tests with JaCoCo
+      run: ./mvnw clean verify
+
+    - name: Upload JaCoCo HTML report
+      uses: actions/upload-artifact@v4
+      with:
+        name: jacoco-report
+        path: target/site/jacoco/
+        retention-days: 7
   
   # ---------------------------
   # ETAPA 5: DEPLOY
